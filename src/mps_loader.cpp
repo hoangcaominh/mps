@@ -25,6 +25,7 @@ Plugin* load_plugin(const char* name) {
     bool result = plugin->init();
     if (!result) {
         fprintf(stderr, "failed to initialize plugin from %s\n", name);
+        unload_plugin(plugin);
         return nullptr;
     }
 

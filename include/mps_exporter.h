@@ -10,15 +10,19 @@
 
 #define EXPORT_PLUGIN(PluginImplType)                   \
 EXTERN_C {                                              \
-Plugin* init_plugin() {                                 \
-    PluginImplType* instance = new PluginImplType();    \
-    return instance;                                    \
-}                                                       \
-\
 void destroy_plugin(Plugin* plugin) {                   \
     if (plugin) {                                       \
         delete plugin;                                  \
         plugin = nullptr;                               \
     }                                                   \
+}                                                       \
+\
+Plugin* init_plugin() {                                 \
+    PluginImplType* instance = new PluginImplType();    \
+    if (!instance->init()) {                            \
+        destroy_plugin(instance);                       \
+        instance = nullptr;                             \
+    }                                                   \
+    return instance;                                    \
 }                                                       \
 }

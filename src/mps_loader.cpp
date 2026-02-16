@@ -1,5 +1,4 @@
 #include "mps.h"
-#include <stdbool.h>
 #include <stdio.h>
 #include <dlfcn.h>
 

@@ -3,38 +3,44 @@
 #include <dlfcn.h>
 
 Plugin* load_plugin(const char* name) {
+    Plugin* plugin = nullptr;
+    init_plugin_func init_plugin = nullptr;
+
     void* handle = dlopen(name, RTLD_LAZY);
     if (!handle) {
         fprintf(stderr, "failed to open plugin %s: %s\n", name, dlerror());
-        return nullptr;
+        goto exit_load_plugin;
     }
 
-    get_plugin_func get_plugin = (get_plugin_func)dlsym(handle, "get_plugin");
-    if (!get_plugin) {
-        fprintf(stderr, "failed to find get_plugin() from %s\n", name);
-        return nullptr;
+    init_plugin = (init_plugin_func)dlsym(handle, "init_plugin");
+    if (!init_plugin) {
+        fprintf(stderr, "failed to find init_plugin() from %s\n", name);
+        goto exit_load_plugin;
     }
 
-    Plugin* plugin = get_plugin();
+    plugin = init_plugin();
     if (!plugin) {
-        fprintf(stderr, "failed to get plugin instance from %s\n", name);
-        return nullptr;
-    }
-
-    bool result = plugin->init();
-    if (!result) {
         fprintf(stderr, "failed to initialize plugin from %s\n", name);
-        unload_plugin(plugin);
-        return nullptr;
+        goto exit_load_plugin;
     }
 
-    printf("loaded plugin %s (%s)\n", plugin->name, name);
+    plugin->handle = handle;
+    printf("loaded plugin %s (%s)\n", plugin->metadata.name, name);
+exit_load_plugin:
     return plugin;
 }
 
 void unload_plugin(Plugin* plugin) {
-    if (plugin) {
-        delete plugin;
-        plugin = nullptr;
+    if (!plugin)
+        return;
+
+    destroy_plugin_func destroy_plugin = nullptr;
+    void* handle = plugin->handle;
+
+    destroy_plugin = (destroy_plugin_func)dlsym(handle, "destroy_plugin");
+    destroy_plugin(plugin);
+
+    if (dlclose(handle) != 0) {
+        fprintf(stderr, "failed to close plugin: %s\n", dlerror());
     }
 }

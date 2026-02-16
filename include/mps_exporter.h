@@ -2,10 +2,23 @@
 
 #include "mps_plugin.h"
 
-#define EXPORT_PLUGIN(PluginImplType)       \
-extern "C" Plugin* get_plugin() {           \
-    static PluginImplType* instance;        \
-    if (!instance)                          \
-        instance = new PluginImplType();    \
-    return instance;                        \
+#ifdef __cplusplus
+#define EXTERN_C extern "C"
+#else
+#define EXTERN_C
+#endif
+
+#define EXPORT_PLUGIN(PluginImplType)                   \
+EXTERN_C {                                              \
+Plugin* init_plugin() {                                 \
+    PluginImplType* instance = new PluginImplType();    \
+    return instance;                                    \
+}                                                       \
+\
+void destroy_plugin(Plugin* plugin) {                   \
+    if (plugin) {                                       \
+        delete plugin;                                  \
+        plugin = nullptr;                               \
+    }                                                   \
+}                                                       \
 }
